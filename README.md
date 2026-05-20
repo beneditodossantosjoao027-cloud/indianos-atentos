@@ -1,2 +1,2 @@
 # nao-definido
-semi interligencia artificial
+semi inteligencia artificial
