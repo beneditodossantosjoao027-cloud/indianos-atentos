@@ -14,7 +14,7 @@ import keyboard
 import turtle
 idioma = "pt-BR"
 r = sr.Recognizer()
-API_KEY = "K84635927088957"
+API_KEY = "sua key"
 #janela
 wn=turtle.Screen()
 wn.title("ambiente grafico")
