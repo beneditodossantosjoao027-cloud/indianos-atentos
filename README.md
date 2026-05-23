@@ -1,2 +1,2 @@
-# capina lote
+#IA(indianos atentos)
 semi inteligencia artificial
