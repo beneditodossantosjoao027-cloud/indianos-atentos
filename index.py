@@ -12,9 +12,10 @@ import mss, mss.tools
 import tkinter as tk
 import keyboard
 import turtle
+import time
 idioma = "pt-BR"
 r = sr.Recognizer()
-API_KEY = "sua key"
+API_KEY = "key"
 #janela
 wn=turtle.Screen()
 wn.title("ambiente grafico")
@@ -61,6 +62,8 @@ def mic():
         audio = r.listen(source)
     try:
         texto = r.recognize_google(audio, language="pt-BR")
+        if any(p in texto.lower() for p in ("imagem", "print", "foto", "capturar", "tela")):
+            selecionar_tela()
         print("Você disse:", texto)
         resposta = responder(texto)
         print("Capina Lote disse:", resposta)
@@ -121,7 +124,7 @@ def responder(pergunta):
         falar(resposta)
         return resposta
     elif pergunta in ("oi", "olá", "ola", "capina","lote", "tudo bem"):
-        resposta = "Olá, meu nome é IA(indianos atentos)."
+        resposta = "Olá, meu nome é Indianos Atentos."
         mostrar_texto(resposta)
         falar(resposta)
         return resposta
@@ -167,10 +170,14 @@ def responder(pergunta):
     mostrar_texto(resposta)
     falar(resposta)
     return resposta
-def mostrar_texto(texto):
 
+
+t = turtle.Turtle()
+t.clear()
+def mostrar_texto(texto):
+    global t
     wn.bgcolor("white")  # Opcional: definir cor de fundo
-    t = turtle.Turtle()
+
     t.hideturtle()
     t.penup()
     t.goto(0, 0)
@@ -211,6 +218,7 @@ def verificar_cor(imagem):
         resultado = "Branco detectado"
     elif avg_r < 120 and avg_g < 110 and avg_b < 100:
         resultado = "Negro detectado"
+
     else:
         resultado = "Tonalidade indefinida"
 
@@ -288,11 +296,38 @@ def selecionar_tela():
 
 
 def falar(texto):
-    tts = gTTS(text=texto, lang=idioma)
-    tts.save("resposta.mp3")
-    playsound("resposta.mp3")
-    os.remove("resposta.mp3")
-   
+    global t
+    """
+    Fluxo Seguro de Fala para a IA (indianos atentos)
+    Evita travamentos de permissão criando nomes únicos sequenciais.
+    """
+    try:
+        # 1. CAPTURA DO TEMPO: O relógio gera um número único para ESTA execução
+        timestamp_atual = int(time.time())
+        nome_arquivo = f"audio_{timestamp_atual}.mp3"
+        print(f"[Voz] Gerando arquivo exclusivo: {nome_arquivo}")
+
+        # 2. CRIAÇÃO: A biblioteca gTTS escreve o arquivo usando a variável fixa
+        tts = gTTS(text=texto, lang=idioma)
+        tts.save(nome_arquivo)
+
+        # 3. REPRODUÇÃO: O playsound segura o script aqui até o áudio terminar
+        print(f"[Voz] Reproduzindo áudio de {len(texto)} caracteres...")
+        playsound(nome_arquivo)
+        
+        # 4. LIBERAÇÃO E LIMPEZA: O áudio terminou de tocar! 
+        # A variável 'nome_arquivo' ainda guarda o mesmo nome do início do fluxo.
+        print(f"[Voz] Tentando apagar {nome_arquivo}...")
+        try:
+            os.remove(nome_arquivo)
+            print("[Voz] Arquivo limpo com sucesso!")
+            t.clear()
+        except Exception as erro_permissao:
+            # Se o Windows travar, o except captura e não deixa o robô morrer
+            print(f"[Voz] O Windows reteve o arquivo temporariamente, mas o fluxo continua seguro. Erro: {erro_permissao}")
+
+    except Exception as e:
+        print(f"[Voz] Erro geral no fluxo de áudio: {e}")
 
 
 
