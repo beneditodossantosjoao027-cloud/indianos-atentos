@@ -121,7 +121,7 @@ def responder(pergunta):
         falar(resposta)
         return resposta
     elif pergunta in ("oi", "olá", "ola", "capina","lote", "tudo bem"):
-        resposta = "Olá, meu nome é Capina Lote."
+        resposta = "Olá, meu nome é IA(indianos atentos)."
         mostrar_texto(resposta)
         falar(resposta)
         return resposta
