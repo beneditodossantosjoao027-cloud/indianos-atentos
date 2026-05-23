@@ -11,19 +11,174 @@ from deep_translator import GoogleTranslator
 import mss, mss.tools
 import tkinter as tk
 import keyboard
-
+import turtle
 idioma = "pt-BR"
 r = sr.Recognizer()
-API_KEY = "suakey"
+API_KEY = "K84635927088957"
+#janela
+wn=turtle.Screen()
+wn.title("ambiente grafico")
+wn.setup(width=500,height=500)
+wn.tracer(1)
 
-# === Falar com voz ===
-def falar(texto):
-    tts = gTTS(text=texto, lang=idioma)
-    tts.save("resposta.mp3")
-    playsound("resposta.mp3")
-    os.remove("resposta.mp3")
+# Registra as formas
+wn.register_shape("mic.gif")
+wn.register_shape("t.gif")
+wn.register_shape("b.gif")
+wn.register_shape("f.gif")
 
-# === Verificador de cor (olhos) ===
+# Cria uma tartaruga para cada imagem e posiciona manualmente
+t1 = turtle.Turtle()
+t1.penup()
+t1.shape("mic.gif")
+
+t2 = turtle.Turtle()
+t2.penup()
+t2.shape("f.gif")
+
+
+
+t4 = turtle.Turtle()
+t4.penup()
+t4.shape("t.gif")
+
+t1.goto(-200, -180)
+t2.goto(10, -180)
+t4.goto(190, -180)
+
+def clique(x,y):
+    if t1.distance(x, y) < 50:
+        mic()
+    if t2.distance(x, y) < 50:
+        ler()
+
+    if t4.distance(x, y) < 50:
+        selecionar_tela()
+
+def mic():
+    with sr.Microphone() as source:
+        print("Fale algo...")
+        audio = r.listen(source)
+    try:
+        texto = r.recognize_google(audio, language="pt-BR")
+        print("Você disse:", texto)
+        resposta = responder(texto)
+        print("Capina Lote disse:", resposta)
+        falar(resposta)
+        return texto
+    except sr.UnknownValueError:
+        print("Não entendi o áudio.")
+        return "Não entendi o áudio"
+    except sr.RequestError as e:
+        print(f"Erro ao solicitar resultados; {e}")
+        return "Erro no reconhecimento de fala"
+
+def buscar_duckduckgo(pergunta):
+    url = f"https://duckduckgo.com/html/?q={pergunta}"
+    resp = requests.get(url)
+    soup = BeautifulSoup(resp.text, "html.parser")
+    resultados = soup.find_all("a", class_="result__a")
+    if resultados:
+        return resultados[0].text
+    return "Nada encontrado no DuckDuckGo e na Wikipedia."
+
+
+# === Busca Wikipedia ===
+def buscar_wikipedia_detalhes(titulo):
+    url = "https://pt.wikipedia.org/w/api.php"
+    params = {
+        "action": "query",
+        "prop": "revisions",
+        "rvprop": "content",
+        "format": "json",
+        "titles": titulo
+    }
+    resp = requests.get(url, params=params)
+    if resp.status_code == 200:
+        pages = resp.json()["query"]["pages"]
+        page = next(iter(pages.values()))
+        if "revisions" in page:
+            texto = page["revisions"][0]["*"]
+            parsed = wtp.parse(texto)
+            if parsed.sections:
+                return parsed.sections[0].string.strip()
+    return buscar_duckduckgo(titulo)
+
+
+# === Responder ===
+def responder(pergunta):
+    pergunta = pergunta.lower()
+    pergunta = pergunta.replace("x", "*").replace("vezes","*").replace("mais","+").replace("menos","-").replace("dividido","/")
+
+    if "hora" in pergunta:
+        resposta = f"Agora são {datetime.now().strftime('%H:%M')}."
+        mostrar_texto(resposta)
+        falar(resposta)
+        return resposta
+    elif "data" in pergunta or "dia" in pergunta:
+        resposta = f"Hoje é {datetime.now().strftime('%d/%m/%Y')}."
+        mostrar_texto(resposta)
+        falar(resposta)
+        return resposta
+    elif pergunta in ("oi", "olá", "ola", "capina","lote", "tudo bem"):
+        resposta = "Olá, meu nome é Capina Lote."
+        mostrar_texto(resposta)
+        falar(resposta)
+        return resposta
+
+    try:
+        resultado = eval(pergunta)
+        resposta = f"Resposta matemática: {resultado}"
+        mostrar_texto(resposta)
+        falar(resposta)
+        return resposta
+    except:
+        pass
+
+    try:
+        traducao = GoogleTranslator(source='auto', target='pt').translate(pergunta)
+        if traducao != pergunta:
+            resposta = f"Tradução: {traducao}"
+            mostrar_texto(resposta)
+            falar(resposta)
+            return resposta
+    except:
+        pass
+
+    try:
+        wikipedia.set_lang("pt")
+        resposta = wikipedia.summary(pergunta, sentences=2)
+        mostrar_texto(resposta)
+        falar(resposta)
+        return resposta
+    except:
+        try:
+            resposta = buscar_wikipedia_detalhes(pergunta)
+            mostrar_texto(resposta)
+            falar(resposta)
+            return resposta
+        except:
+            resposta = buscar_duckduckgo(pergunta)
+            mostrar_texto(resposta)
+            falar(resposta)
+            return resposta
+
+    resposta = "Não entendi o comando."
+    mostrar_texto(resposta)
+    falar(resposta)
+    return resposta
+def mostrar_texto(texto):
+
+    wn.bgcolor("white")  # Opcional: definir cor de fundo
+    t = turtle.Turtle()
+    t.hideturtle()
+    t.penup()
+    t.goto(0, 0)
+    t.write(texto, align="center", font=("Arial", 16, "normal"))
+def ler():
+    pergunta = input("Digite sua pergunta: ")
+    print(responder(pergunta))
+
 def verificar_cor(imagem):
     root = tk.Tk()
     img = tk.PhotoImage(file=imagem)
@@ -56,80 +211,12 @@ def verificar_cor(imagem):
         resultado = "Branco detectado"
     elif avg_r < 120 and avg_g < 110 and avg_b < 100:
         resultado = "Negro detectado"
-
     else:
         resultado = "Tonalidade indefinida"
 
     print(f"Capina Lote disse (olhos): {resultado}")
     print(f"(Valores médios: R={avg_r}, G={avg_g}, B={avg_b})")
-    falar(f"{resultado}")
 
-# === Busca DuckDuckGo ===
-def buscar_duckduckgo(pergunta):
-    url = f"https://duckduckgo.com/html/?q={pergunta}"
-    resp = requests.get(url)
-    soup = BeautifulSoup(resp.text, "html.parser")
-    resultados = soup.find_all("a", class_="result__a")
-    if resultados:
-        return resultados[0].text
-    return "Nada encontrado no DuckDuckGo e na Wikipedia."
-
-# === Busca Wikipedia ===
-def buscar_wikipedia_detalhes(titulo):
-    url = "https://pt.wikipedia.org/w/api.php"
-    params = {
-        "action": "query",
-        "prop": "revisions",
-        "rvprop": "content",
-        "format": "json",
-        "titles": titulo
-    }
-    resp = requests.get(url, params=params)
-    if resp.status_code == 200:
-        pages = resp.json()["query"]["pages"]
-        page = next(iter(pages.values()))
-        if "revisions" in page:
-            texto = page["revisions"][0]["*"]
-            parsed = wtp.parse(texto)
-            if parsed.sections:
-                return parsed.sections[0].string.strip()
-    return buscar_duckduckgo(titulo)
-
-# === Responder ===
-def responder(pergunta):
-    pergunta = pergunta.lower()
-    pergunta = pergunta.replace("x", "*").replace("vezes","*").replace("mais","+").replace("menos","-").replace("dividido","/")
-
-    if "hora" in pergunta:
-        return f"Agora são {datetime.now().strftime('%H:%M')}."
-    elif "data" in pergunta or "dia" in pergunta:
-        return f"Hoje é {datetime.now().strftime('%d/%m/%Y')}."
-    elif pergunta in ("oi", "olá", "ola", "capina","lote", "tudo bem"):
-        return "Olá, meu nome é Capina Lote."
-
-    try:
-        resultado = eval(pergunta)
-        return f"Resposta matemática: {resultado}"
-    except:
-        pass
-
-    try:
-        traducao = GoogleTranslator(source='auto', target='pt').translate(pergunta)
-        if traducao != pergunta:
-            return f"Tradução: {traducao}"
-    except:
-        pass
-
-    try:
-        wikipedia.set_lang("pt")
-        return wikipedia.summary(pergunta, sentences=2)
-    except:
-        try:
-            return buscar_wikipedia_detalhes(pergunta)
-        except:
-            return buscar_duckduckgo(pergunta)
-
-    return "Não entendi o comando."
 
 # === Captura de tela ===
 def capturar_area(x1, y1, x2, y2):
@@ -143,7 +230,7 @@ def capturar_area(x1, y1, x2, y2):
         img = sct.grab(monitor)
         mss.tools.to_png(img.rgb, img.size, output="tela_selecionada.png")
 
-    # Olhos: verificar cor
+    # Verificar cor dos olhos
     verificar_cor("tela_selecionada.png")
 
     # OCR
@@ -161,11 +248,11 @@ def capturar_area(x1, y1, x2, y2):
             print("Texto OCR:", texto_extraido)
             resposta = responder(texto_extraido)
             print("Capina Lote disse:", resposta)
-            falar(resposta)
         else:
             print("Nenhum texto foi extraído da imagem.")
     else:
         print("Erro na requisição OCR:", response.text)
+
 
 # === Seleção com mouse ===
 def selecionar_tela():
@@ -199,26 +286,16 @@ def selecionar_tela():
 
     root.mainloop()
 
-# === Entrada principal ===
-def ouvir_ou_digitar():
-    escolha = input("Digite 'voz' para falar ou 'texto' para digitar: ")
-    if escolha == "voz":
-        with sr.Microphone(device_index=1) as source:
-            print("Fale algo...")
-            audio = r.listen(source)
-        try:
-            return r.recognize_google(audio, language="pt-BR")
-        except:
-            return "Não entendi o áudio"
-    else:
-        return input("Digite sua pergunta: ")
 
-while True:
- 
-    comando = ouvir_ou_digitar()
-    if any(p in comando.lower() for p in ("imagem", "print", "foto", "capturar", "tela")):
-        selecionar_tela()
-    else:
-        resposta = responder(comando)
-        print("Capina Lote disse:", resposta)
-        falar(resposta)
+def falar(texto):
+    tts = gTTS(text=texto, lang=idioma)
+    tts.save("resposta.mp3")
+    playsound("resposta.mp3")
+    os.remove("resposta.mp3")
+   
+
+
+
+
+wn.onscreenclick(clique)
+wn.update()
